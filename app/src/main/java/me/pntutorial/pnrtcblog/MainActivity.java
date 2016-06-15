@@ -4,10 +4,18 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.TextView;
+
+import com.pubnub.api.Callback;
+import com.pubnub.api.Pubnub;
+import com.pubnub.api.PubnubException;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import me.pntutorial.pnrtcblog.util.Constants;
 
@@ -20,6 +28,7 @@ public class MainActivity extends Activity {
     private EditText mCallNumET;
     // private Pubnub mPubNub;
     private String username;
+    private Pubnub mPubNub;
 
     /**
      * TODO: "Login" by subscribing to PubNub channel + Constants.SUFFIX
@@ -71,6 +80,35 @@ public class MainActivity extends Activity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public void initPubNub() {
+        String stdbyChannel = this.username + Constants.STDBY_SUFFIX;
+        this.mPubNub = new Pubnub(Constants.PUB_KEY, Constants.SUB_KEY);
+        this.mPubNub.setUUID(this.username);
+        try {
+            this.mPubNub.subscribe(stdbyChannel, new Callback() {
+                @Override
+                public void successCallback(String channel, Object message) {
+                    Log.d("MA-success", "MESSAGE: " + message.toString());
+                    if (!(message instanceof JSONObject)) return; // Ignore if not JSONObject
+                    JSONObject jsonMsg = (JSONObject) message;
+                    try {
+                        if (!jsonMsg.has(Constants.JSON_CALL_USER)) return;
+                        String user = jsonMsg.getString(Constants.JSON_CALL_USER);
+                        // Consider Accept/Reject call here
+                        Intent intent = new Intent(MainActivity.this, VideoChatActivity.class);
+                        intent.putExtra(Constants.USER_NAME, username);
+                        intent.putExtra(Constants.JSON_CALL_USER, user);
+                        startActivity(intent);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        } catch (PubnubException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
