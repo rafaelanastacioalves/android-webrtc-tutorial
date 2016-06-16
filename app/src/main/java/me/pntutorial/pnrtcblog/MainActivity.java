@@ -56,6 +56,7 @@ public class MainActivity extends Activity {
 
         //TODO: Create and instance of Pubnub and subscribe to standby channel
         // In pubnub subscribe callback, send user to your VideoActivity
+        initPubNub();
     }
 
 
