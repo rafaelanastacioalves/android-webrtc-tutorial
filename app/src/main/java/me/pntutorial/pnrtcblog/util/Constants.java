@@ -7,6 +7,9 @@ package me.pntutorial.pnrtcblog.util;
 public class Constants {
     public static final String SHARED_PREFS = "me.pntutorial.SHARED_PREFS";
     public static final String USER_NAME    = "me.pntutorial.USERNAME";
+
+    public static final String CALL_USER    = "me.pntutorial.SHARED_PREFS.CALL_USER";
+
     public static final String JSON_CALL_USER = "call_user";
     public static final String STDBY_SUFFIX = "-stdby";
 

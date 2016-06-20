@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import org.webrtc.AudioSource;
@@ -16,13 +17,22 @@ import org.webrtc.VideoRendererGui;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 
+import me.kevingleason.pnwebrtc.PnPeer;
 import me.kevingleason.pnwebrtc.PnRTCClient;
+import me.kevingleason.pnwebrtc.PnRTCListener;
 import me.pntutorial.pnrtcblog.util.Constants;
+
+import static android.R.attr.width;
+import static android.R.attr.x;
+import static android.R.attr.y;
+import static me.pntutorial.pnrtcblog.R.attr.height;
+import static org.webrtc.VideoRendererGui.ScalingType.SCALE_ASPECT_FILL;
 
 public class VideoChatActivity extends Activity {
     public static final String VIDEO_TRACK_ID = "videoPN";
     public static final String AUDIO_TRACK_ID = "audioPN";
     public static final String LOCAL_MEDIA_STREAM_ID = "localStreamPN";
+    private final boolean mirror = true;
 
     private PnRTCClient pnRTCClient;
     private VideoSource localVideoSource;
@@ -31,6 +41,7 @@ public class VideoChatActivity extends Activity {
     private GLSurfaceView mVideoView;
 
     private String username;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setContentView(R.layout.activity_video_chat);
@@ -87,16 +98,81 @@ public class VideoChatActivity extends Activity {
 
 // Now that VideoRendererGui is ready, we can get our VideoRenderer.
 // IN THIS ORDER. Effects which is on top or bottom
-        remoteRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
-        localRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, true);
+        remoteRender = VideoRendererGui.create(0, 0, 100, 100, SCALE_ASPECT_FILL, false);
+        localRender = VideoRendererGui.create(0, 0, 100, 100, SCALE_ASPECT_FILL, true);
 
         // Then we set that view, and pass a Runnable to run once the surface is ready
         VideoRendererGui.setView(mVideoView, null);
 
-// Now that VideoRendererGui is ready, we can get our VideoRenderer.
-// IN THIS ORDER. Effects which is on top or bottom
-        remoteRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
-        localRender = VideoRendererGui.create(0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, true);
+
+        VideoRendererGui.create(x, y, width, height, SCALE_ASPECT_FILL, mirror);
+
+
+        // VideoChatActivity#onCreate()
+// First attach the RTC Listener so that callback events will be triggered
+        this.pnRTCClient.attachRTCListener(new MyRTCListener());
+        this.pnRTCClient.attachLocalMediaStream(mediaStream);
+
+// Listen on a channel. This is your "phone number," also set the max chat users.
+        this.pnRTCClient.listenOn(this.username);
+        this.pnRTCClient.setMaxConnections(1);
+
+// If Constants.CALL_USER is in the intent extras, auto-connect them.
+        if (extras.containsKey(Constants.CALL_USER)) {
+            String callUser = extras.getString(Constants.CALL_USER, "");
+            connectToUser(callUser);
+        }
+
+    }
+
+    public void connectToUser(String user) {
+        this.pnRTCClient.connect(user);
+    }
+
+    public void hangup(View view) {
+        this.pnRTCClient.closeAllConnections();
+        startActivity(new Intent(VideoChatActivity.this, MainActivity.class));
+    }
+
+    private class MyRTCListener extends PnRTCListener {
+        // Override methods you plan on using
+
+        @Override
+        public void onLocalStream(final MediaStream localStream) {
+            VideoChatActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if(localStream.videoTracks.size()==0) return;
+                    localStream.videoTracks.get(0).addRenderer(new VideoRenderer(localRender));
+                }
+            });
+        }
+
+        @Override
+        public void onAddRemoteStream(final MediaStream remoteStream, final PnPeer peer) {
+            VideoChatActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(VideoChatActivity.this,"Connected to " + peer.getId(), Toast.LENGTH_SHORT).show();
+                    try {
+                        if(remoteStream.videoTracks.size()==0) return;
+                        remoteStream.videoTracks.get(0).addRenderer(new VideoRenderer(remoteRender));
+                        VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
+                        VideoRendererGui.update(localRender, 72, 72, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, true);
+                    }
+                    catch (Exception e){ e.printStackTrace(); }
+                }
+            });
+        }
+
+        @Override
+        public void onPeerConnectionClosed(PnPeer peer) {
+            Intent intent = new Intent(VideoChatActivity.this, MainActivity.class);
+            startActivity(intent);
+            finish();
+        }
+
+
 
     }
 }
