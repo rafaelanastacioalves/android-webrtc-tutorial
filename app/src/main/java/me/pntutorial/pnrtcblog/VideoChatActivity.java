@@ -11,6 +11,7 @@ import org.webrtc.AudioSource;
 import org.webrtc.AudioTrack;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnectionFactory;
+import org.webrtc.VideoCapturer;
 import org.webrtc.VideoCapturerAndroid;
 import org.webrtc.VideoRenderer;
 import org.webrtc.VideoRendererGui;
@@ -22,10 +23,6 @@ import me.kevingleason.pnwebrtc.PnRTCClient;
 import me.kevingleason.pnwebrtc.PnRTCListener;
 import me.pntutorial.pnrtcblog.util.Constants;
 
-import static android.R.attr.width;
-import static android.R.attr.x;
-import static android.R.attr.y;
-import static me.pntutorial.pnrtcblog.R.attr.height;
 import static org.webrtc.VideoRendererGui.ScalingType.SCALE_ASPECT_FILL;
 
 public class VideoChatActivity extends Activity {
@@ -44,8 +41,9 @@ public class VideoChatActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        setContentView(R.layout.activity_video_chat);
         super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.activity_video_chat);
         // VideoChatActivity#onCreate()
         Bundle extras = getIntent().getExtras();
         if (extras == null || !extras.containsKey(Constants.USER_NAME)) {
@@ -76,7 +74,7 @@ public class VideoChatActivity extends Activity {
         String backFacingCam  = VideoCapturerAndroid.getNameOfBackFacingDevice();
 
 // Creates a VideoCapturerAndroid instance for the device name
-        VideoCapturerAndroid capturer = (VideoCapturerAndroid) VideoCapturerAndroid.create(frontFacingCam);
+        VideoCapturer capturer = VideoCapturerAndroid.create(frontFacingCam);
 
 // First create a Video Source, then we can make a Video Track
         localVideoSource = pcFactory.createVideoSource(capturer, this.pnRTCClient.videoConstraints());
@@ -86,31 +84,39 @@ public class VideoChatActivity extends Activity {
         AudioSource audioSource = pcFactory.createAudioSource(this.pnRTCClient.audioConstraints());
         AudioTrack localAudioTrack = pcFactory.createAudioTrack(AUDIO_TRACK_ID, audioSource);
 
-        // VideoChatActivity#onCreate()
+
+
+
+        // To create our VideoRenderer, we can use the included VideoRendererGui for simplicity
+        // First we need to set the GLSurfaceView that it should render to
+        this.mVideoView = (GLSurfaceView) findViewById(R.id.gl_surface);
+
+        // Then we set that view, and pass a Runnable to run once the surface is ready
+        VideoRendererGui.setView(mVideoView, null);
+
+        // Now that VideoRendererGui is ready, we can get our VideoRenderer.
+// IN THIS ORDER. Effects which is on top or bottom
+        remoteRender = VideoRendererGui.create(0, 0, 100, 100, SCALE_ASPECT_FILL, false);
+        localRender = VideoRendererGui.create(0, 0, 100, 100, SCALE_ASPECT_FILL, true);
+
+
+
         MediaStream mediaStream = pcFactory.createLocalMediaStream(LOCAL_MEDIA_STREAM_ID);
+
+
 
 // Now we can add our tracks.
         mediaStream.addTrack(localVideoTrack);
         mediaStream.addTrack(localAudioTrack);
 
-        // Then we set that view, and pass a Runnable to run once the surface is ready
-        VideoRendererGui.setView(mVideoView, null);
 
-// Now that VideoRendererGui is ready, we can get our VideoRenderer.
-// IN THIS ORDER. Effects which is on top or bottom
-        remoteRender = VideoRendererGui.create(0, 0, 100, 100, SCALE_ASPECT_FILL, false);
-        localRender = VideoRendererGui.create(0, 0, 100, 100, SCALE_ASPECT_FILL, true);
+        // First attach the RTC Listener so that callback events will be triggered
+        this.pnRTCClient.attachRTCListener(new MyRTCListener());
 
-        // Then we set that view, and pass a Runnable to run once the surface is ready
-        VideoRendererGui.setView(mVideoView, null);
-
-
-        VideoRendererGui.create(x, y, width, height, SCALE_ASPECT_FILL, mirror);
 
 
         // VideoChatActivity#onCreate()
-// First attach the RTC Listener so that callback events will be triggered
-        this.pnRTCClient.attachRTCListener(new MyRTCListener());
+
         this.pnRTCClient.attachLocalMediaStream(mediaStream);
 
 // Listen on a channel. This is your "phone number," also set the max chat users.
