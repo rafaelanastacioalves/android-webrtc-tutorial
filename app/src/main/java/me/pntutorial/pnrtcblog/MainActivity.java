@@ -7,8 +7,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
@@ -108,6 +110,34 @@ public class MainActivity extends Activity {
                 }
             });
         } catch (PubnubException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void makeCall(View view){
+        String callNum = mCallNumET.getText().toString();
+        if (callNum.isEmpty() || callNum.equals(this.username)) {
+            Toast.makeText(this, "Enter a valid number.", Toast.LENGTH_SHORT).show();
+        }
+        dispatchCall(callNum);
+    }
+
+    public void dispatchCall(final String callNum) {
+        final String callNumStdBy = callNum + Constants.STDBY_SUFFIX;
+        JSONObject jsonCall = new JSONObject();
+        try {
+            jsonCall.put(Constants.JSON_CALL_USER, this.username);
+            mPubNub.publish(callNumStdBy, jsonCall, new Callback() {
+                @Override
+                public void successCallback(String channel, Object message) {
+                    Log.d("MA-dCall", "SUCCESS: " + message.toString());
+                    Intent intent = new Intent(MainActivity.this, VideoChatActivity.class);
+                    intent.putExtra(Constants.USER_NAME, username);
+                    intent.putExtra(Constants.CALL_USER, callNum);
+                    startActivity(intent);
+                }
+            });
+        } catch (JSONException e) {
             e.printStackTrace();
         }
     }
