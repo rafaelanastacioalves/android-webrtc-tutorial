@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -24,6 +25,8 @@ import me.kevingleason.pnwebrtc.PnRTCListener;
 import me.pntutorial.pnrtcblog.util.Constants;
 
 import static org.webrtc.VideoRendererGui.ScalingType.SCALE_ASPECT_FILL;
+
+
 
 public class VideoChatActivity extends Activity {
     public static final String VIDEO_TRACK_ID = "videoPN";
@@ -141,30 +144,36 @@ public class VideoChatActivity extends Activity {
     }
 
     private class MyRTCListener extends PnRTCListener {
+        private  final String LOG_TAG = getClass().getSimpleName();
         // Override methods you plan on using
 
         @Override
         public void onLocalStream(final MediaStream localStream) {
+            super.onLocalStream(localStream);
             VideoChatActivity.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if(localStream.videoTracks.size()==0) return;
                     localStream.videoTracks.get(0).addRenderer(new VideoRenderer(localRender));
+                    Log.d(LOG_TAG,"onLocalStream");
+
                 }
             });
         }
 
         @Override
         public void onAddRemoteStream(final MediaStream remoteStream, final PnPeer peer) {
+            super.onAddRemoteStream(remoteStream, peer); // Will log values
             VideoChatActivity.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     Toast.makeText(VideoChatActivity.this,"Connected to " + peer.getId(), Toast.LENGTH_SHORT).show();
                     try {
-                        if(remoteStream.videoTracks.size()==0) return;
+                        if(remoteStream.audioTracks.size()==0 || remoteStream.videoTracks.size()==0) return;
                         remoteStream.videoTracks.get(0).addRenderer(new VideoRenderer(remoteRender));
                         VideoRendererGui.update(remoteRender, 0, 0, 100, 100, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
                         VideoRendererGui.update(localRender, 72, 72, 25, 25, VideoRendererGui.ScalingType.SCALE_ASPECT_FIT, true);
+                        Log.d(LOG_TAG,"onAddRemoteStream");
                     }
                     catch (Exception e){ e.printStackTrace(); }
                 }
