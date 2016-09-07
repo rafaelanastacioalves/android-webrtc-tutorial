@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion "23.0.3"
+    compileSdkVersion 24
+    buildToolsVersion "24.0.0"
 
     defaultConfig {
         applicationId "me.pntutorial.pnrtcblog"
         minSdkVersion 15
-        targetSdkVersion 21
+        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
     }
@@ -24,6 +24,6 @@ dependencies {
     compile 'io.pristine:libjingle:9694@aar'
     compile group: 'com.pubnub', name: 'pubnub', version: '4.0.8'
     compile 'me.kevingleason:pnwebrtc:1.0.6@aar'
-    compile 'com.android.support:appcompat-v7:21.0.3'
+    compile 'com.android.support:appcompat-v7:24.0.0'
     compile 'com.android.support.constraint:constraint-layout:1.0.0-alpha1'
 }
