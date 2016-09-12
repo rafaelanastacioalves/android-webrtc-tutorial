@@ -77,7 +77,7 @@ public class VideoChatActivity extends Activity {
         String backFacingCam  = VideoCapturerAndroid.getNameOfBackFacingDevice();
 
 // Creates a VideoCapturerAndroid instance for the device name
-        VideoCapturer capturer = VideoCapturerAndroid.create(frontFacingCam);
+        VideoCapturer capturer = VideoCapturerAndroid.create(backFacingCam);
 
 // First create a Video Source, then we can make a Video Track
         localVideoSource = pcFactory.createVideoSource(capturer, this.pnRTCClient.videoConstraints());
@@ -98,7 +98,7 @@ public class VideoChatActivity extends Activity {
         VideoRendererGui.setView(mVideoView, null);
 
         // Now that VideoRendererGui is ready, we can get our VideoRenderer.
-// IN THIS ORDER. Effects which is on top or bottom
+// IN THIS ORDER. Effects which is top or bottom
         remoteRender = VideoRendererGui.create(0, 0, 100, 100, SCALE_ASPECT_FILL, false);
         localRender = VideoRendererGui.create(0, 0, 100, 100, SCALE_ASPECT_FILL, true);
 
